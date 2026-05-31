@@ -24,10 +24,13 @@ local function noop() end
 local set_clipboard = setclipboard or (syn and syn.setclipboard) or noop
 
 -- ============================================================
--- GRADIENT HELPER (Smooth Wave Neon Style)
+-- GRADIENT HELPER (Fixed Safe Smooth Wave)
 -- ============================================================
 local function gradient(text, color1, color2, speed)
     if type(text) ~= "string" or text == "" then return "" end
+    
+    -- JIKA SPEED TIDAK DIISI (NIL), OTOMATIS GUNAKAN KECEPATAN STANDARD (3.5)
+    speed = tonumber(speed) or 3.5
     
     local chars = {}
     for _, c in utf8.codes(text) do 
@@ -36,17 +39,11 @@ local function gradient(text, color1, color2, speed)
     
     local len = #chars
     local result = table.create(len)
-    local t = os.clock() * speed -- Waktu berjalan berdasarkan speed pembawa
+    local t = os.clock() * speed
     
     for i = 1, len do
-        -- Gelombang sinusoidal berdasarkan posisi huruf (i) dan waktu (t)
-        -- Faktor 0.5 mengatur seberapa rapat sebaran gradasinya
         local wave = math.sin(t - (i * 0.5)) 
-        
-        -- Mengubah rentang sin (-1 s/d 1) menjadi (0 s/d 1) untuk Lerp
         local leraRatio = (wave + 1) / 2 
-        
-        -- Interpolasi warna yang sangat smooth
         local blendedColor = color1:Lerp(color2, leraRatio)
         
         result[i] = string.format('<font color="#%s">%s</font>', blendedColor:ToHex(), chars[i])
