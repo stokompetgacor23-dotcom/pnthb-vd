@@ -161,10 +161,8 @@ function UI:ShowWelcomePopup(callback)
     local popupClosed = false
     
     -- Hotkeys list untuk popup
-    local hotkeysText = table.concat({
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    local hotkeysText = table.concat()
         "HOTKEYS",
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
         "PC / LAPTOP",
         "   • Press [ K ] → Toggle GUI",
         "   • Press [ R ] → Toggle Moonwalk",
@@ -173,9 +171,7 @@ function UI:ShowWelcomePopup(callback)
         "MOBILE",
         "   • Tap floating logo → Toggle GUI",
         "   • Tap Moonwalk button → Toggle Moonwalk",
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
         "PINATHUB - BY @viunze",
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     }, "\n")
     
     self.WindUI:Popup({
