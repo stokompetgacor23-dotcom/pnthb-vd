@@ -24,7 +24,7 @@ local function noop() end
 local set_clipboard = setclipboard or (syn and syn.setclipboard) or noop
 
 -- ============================================
--- GRADIENT HELPER (Brainrot Style)
+-- GRADIENT HELPER (Brainrot Style - Animated)
 -- ============================================
 local function gradient(text, startColor, endColor, timeOffset)
     if type(text) ~= "string" or text == "" then return "" end
@@ -39,6 +39,46 @@ local function gradient(text, startColor, endColor, timeOffset)
         result[i] = string.format('<font color="#%s">%s</font>', color:ToHex(), chars[i])
     end
     return table.concat(result)
+end
+
+-- ============================================
+-- ANIMATED TITLE (Neon Gradient Moving)
+-- ============================================
+local animatedTitle = nil
+local titleAnimationConnection = nil
+
+local function startTitleAnimation(window)
+    if titleAnimationConnection then return end
+    
+    local colors = {
+        { Color3.fromHex("#8B5CF6"), Color3.fromHex("#A855F7") }, -- Ungu
+        { Color3.fromHex("#A855F7"), Color3.fromHex("#C084FC") }, -- Ungu terang
+        { Color3.fromHex("#C084FC"), Color3.fromHex("#6B7280") }, -- Ungu ke abu
+        { Color3.fromHex("#6B7280"), Color3.fromHex("#8B5CF6") }, -- Abu ke ungu
+    }
+    local colorIndex = 1
+    local offset = 0
+    
+    titleAnimationConnection = game:GetService("RunService").RenderStepped:Connect(function(dt)
+        if not window then 
+            if titleAnimationConnection then titleAnimationConnection:Disconnect() end
+            titleAnimationConnection = nil
+            return
+        end
+        
+        offset = (offset + dt * 0.8) % 2
+        local colorPair = colors[colorIndex]
+        
+        if window.SetTitle then
+            local animatedText = gradient("PINATHUB", colorPair[1], colorPair[2], offset)
+            window:SetTitle("<b>" .. animatedText .. "</b>")
+        end
+        
+        -- Ganti warna setiap 3 detik
+        if tick() % 3 < 0.1 then
+            colorIndex = (colorIndex % #colors) + 1
+        end
+    end)
 end
 
 -- ============================================
@@ -115,6 +155,62 @@ function UI:CreateLogo()
 end
 
 -- ============================================
+-- SHOW WELCOME POPUP
+-- ============================================
+function UI:ShowWelcomePopup(callback)
+    local popupClosed = false
+    
+    -- Hotkeys list untuk popup
+    local hotkeysText = table.concat({
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        "HOTKEYS",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        "PC / LAPTOP",
+        "   • Press [ K ] → Toggle GUI",
+        "   • Press [ R ] → Toggle Moonwalk",
+        "   • Press [ L ] → Anti-Stuck",
+        "",
+        "MOBILE",
+        "   • Tap floating logo → Toggle GUI",
+        "   • Tap Moonwalk button → Toggle Moonwalk",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        "PINATHUB - BY @viunze",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    }, "\n")
+    
+    self.WindUI:Popup({
+        Title = gradient("PINATHUB", Color3.fromHex("#8B5CF6"), Color3.fromHex("#C084FC")),
+        Icon = "rbxassetid://118264723961739",
+        Content = hotkeysText,
+        Buttons = {
+            {
+                Title = "Continue to Hub",
+                Icon = "lucide:shield",
+                Variant = "Primary",
+                Callback = function()
+                    popupClosed = true
+                    if callback then callback() end
+                end
+            }
+        }
+    })
+    
+    repeat task.wait() until popupClosed
+end
+
+-- ============================================
+-- SHOW HOTKEYS NOTIFICATION
+-- ============================================
+function UI:ShowHotkeysNotification()
+    task.wait(1.5)
+    self.Window:Notify(
+        "Hotkeys", 
+        "🔹 K = Toggle GUI 🔹 R = Moonwalk 🔹 L = Anti-Stuck", 
+        5
+    )
+end
+
+-- ============================================
 -- INIT FUNCTION (Brainrot UI Style - Features Intact)
 -- ============================================
 function UI:Init()
@@ -131,9 +227,16 @@ function UI:Init()
     local combat = self.Modules.Combat
     local misc = self.Modules.Misc
     
-    -- Create Window (Brainrot Style)
+    -- ============================================
+    -- SHOW WELCOME POPUP TERLEBIH DAHULU
+    -- ============================================
+    self:ShowWelcomePopup()
+    
+    -- ============================================
+    -- CREATE WINDOW (Brainrot Style)
+    -- ============================================
     self.Window = WindUI:CreateWindow({
-        Title = gradient("PINATHUB", Color3.fromHex("#FFFFFF"), Color3.fromHex("#8F8F8F")),
+        Title = "<b>PINATHUB</b>",
         Author = "@viunze on tiktok",
         Folder = "pinathub",
         Size = UDim2.fromOffset(500, 400),
@@ -143,7 +246,11 @@ function UI:Init()
         UserEnabled = true,
         HasOutline = true,
         SideBarWidth = 150,
+        ToggleKey = Enum.KeyCode.K,  -- Hotkey K untuk toggle GUI
     })
+    
+    -- Start animated title (PINATHUB dengan efek neon bergerak)
+    startTitleAnimation(self.Window)
     
     -- Create Logo
     local logoGui, logoButton = self:CreateLogo()
@@ -159,6 +266,36 @@ function UI:Init()
                     self.Window:Minimize()
                 end
             end)
+        end
+    end)
+    
+    -- ============================================
+    -- SETUP HOTKEYS NOTIFICATION
+    -- ============================================
+    self:ShowHotkeysNotification()
+    
+    -- ============================================
+    -- SETUP KEYBINDS (R untuk Moonwalk, L untuk Anti-Stuck)
+    -- ============================================
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        
+        -- Tombol R untuk Moonwalk
+        if input.KeyCode == Enum.KeyCode.R then
+            local newState = not config.Current.MoonwalkEnabled
+            config.Set("MoonwalkEnabled", newState)
+            if not newState then
+                local char = LocalPlayer.Character
+                local hum = char and char:FindFirstChild("Humanoid")
+                if hum then hum.AutoRotate = true end
+            end
+            self.Window:Notify("Moonwalk", newState and "ON" or "OFF", 1)
+        end
+        
+        -- Tombol L untuk Anti-Stuck
+        if input.KeyCode == Enum.KeyCode.L then
+            misc.TriggerAntiStuck()
+            self.Window:Notify("Anti-Stuck", "Triggered!", 1)
         end
     end)
     
@@ -258,32 +395,23 @@ function UI:Init()
     protectionSection:Toggle({ Title = "Anti Aura", Value = getgenv().AntiAura or false, Callback = function(v) getgenv().AntiAura = v end })
     protectionSection:Divider()
     
-    -- =========================================================
-    -- ALLOW JUMP SECTION (FIXED - Terhubung ke player.ToggleAllowJump)
-    -- =========================================================
+    -- Allow Jump Section
     local jumpSection = MiscTab:Section({ Title = "Jump" })
-    
-    -- State lokal untuk toggle
     local jumpEnabled = false
-    
     jumpSection:Toggle({ 
         Title = "Allow Jump", 
-        Desc = "Maksa game untuk mengizinkan lompatan meskipun dinonaktifkan (Cooldown: 2 detik)",
+        Desc = "Allow Jump If game Has Anti Jump",
         Value = false, 
         Callback = function(v)
             jumpEnabled = v
             if v then
-                -- Panggil fungsi EnableAllowJump dari Player module
                 if player.EnableAllowJump then
                     player.EnableAllowJump()
-                else
-                    warn("[PINATHUB] player.EnableAllowJump not found!")
                 end
                 if self.Window then
                     self.Window:Notify("Allow Jump", "Jumping force-enabled! Press Space to jump.", 2)
                 end
             else
-                -- Panggil fungsi DisableAllowJump dari Player module
                 if player.DisableAllowJump then
                     player.DisableAllowJump()
                 end
@@ -333,8 +461,8 @@ function UI:Init()
     -- OPEN WINDOW
     -- ============================================
     self.Window:Open()
-    task.wait(1)
-    self.Window:Notify("PINATHUB", "Loaded!", 3)
+    task.wait(0.5)
+    self.Window:Notify("PINATHUB", "Loaded! Press K to toggle GUI | R = Moonwalk | L = Anti-Stuck", 5)
     
     print("PINATHUB Loaded")
     
