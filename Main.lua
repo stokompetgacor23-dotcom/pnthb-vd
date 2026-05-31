@@ -1,18 +1,33 @@
 -- =======================================================
--- PINATHUB - MAIN ENTRY POINT (Loader-Compatible)
+-- PINATHUB - MAIN ENTRY POINT (Loader-Compatible + Global Safe)
 -- =======================================================
 -- Author: @viunze on tiktok
--- Architecture: Clean Modular with WindUI Swing Obby Brainrot Style
 -- =======================================================
 
 -- =========================================================
--- TERIMA MODULES DARI LOADER
+-- TERIMA MODULES DARI LOADER & AMANKAN KE GLOBAL
 -- =========================================================
-local Modules = ... -- Modul-modul dikirim dari loader script
+local passedModules = ...
 
-if not Modules or not Modules.Utils then
-    error("[PINATHUB] Modules not provided by loader!")
+-- Simpan ke global environment (getgenv) agar aman dari overwrite library lain
+getgenv().PINATHUB_MODULES = getgenv().PINATHUB_MODULES or passedModules
+
+-- Fungsi untuk ambil modules (dengan fallback ke global)
+local function GetModules()
+    local modules = getgenv().PINATHUB_MODULES
+    if not modules then
+        error("[PINATHUB] Modules lost! Restart script.")
+    end
+    return modules
 end
+
+local Modules = GetModules()
+
+if not Modules.Utils then
+    error("[PINATHUB] Utils module missing! Check loader.")
+end
+
+print("[PINATHUB] Modules locked to global environment - OK")
 
 -- =========================================================
 -- INITIALIZATION
@@ -104,6 +119,11 @@ else
     end)
     return
 end
+
+-- =========================================================
+-- AMBIL MODULES LAGI (JIKA TEROVERWRITE)
+-- =========================================================
+Modules = GetModules() -- Refresh modules (jaga-jaga kena overwrite WindUI)
 
 -- =========================================================
 -- INJECT DEPENDENCIES
