@@ -24,11 +24,23 @@ local function noop() end
 local set_clipboard = setclipboard or (syn and syn.setclipboard) or noop
 
 -- ============================================================
+-- COLOR3 FROMHEX COMPATIBILITY
+-- ============================================================
+local function fromHex(hex)
+    hex = hex:gsub("#", "")
+    local r = tonumber(hex:sub(1,2), 16) or 0
+    local g = tonumber(hex:sub(3,4), 16) or 0
+    local b = tonumber(hex:sub(5,6), 16) or 0
+    return Color3.fromRGB(r, g, b)
+end
+
+-- ============================================================
 -- GRADIENT HELPER (Smooth Wave Neon Style)
 -- ============================================================
 local function gradient(text, color1, color2, speed)
     if type(text) ~= "string" or text == "" then return "" end
-    if not speed then speed = 3.5 end -- FIX: Default speed jika tidak disediakan
+    if not color1 or not color2 then return text end
+    if not speed then speed = 3.5 end
     
     local chars = {}
     for _, c in utf8.codes(text) do 
@@ -57,8 +69,8 @@ local titleAnimationConnection = nil
 local function startTitleAnimation(window)
     if titleAnimationConnection then return end
     
-    local NeonPurple = Color3.fromHex("#A855F7")
-    local NeonGray   = Color3.fromHex("#9CA3AF")
+    local NeonPurple = fromHex("#A855F7")
+    local NeonGray   = fromHex("#9CA3AF")
     local AnimSpeed  = 3.5
 
     titleAnimationConnection = game:GetService("RunService").RenderStepped:Connect(function()
@@ -170,7 +182,7 @@ PINATHUB - BY @viunze
 ]]
     
     self.WindUI:Popup({
-        Title = gradient("PINATHUB", Color3.fromHex("#8B5CF6"), Color3.fromHex("#C084FC"), 3.5),
+        Title = gradient("PINATHUB", fromHex("#8B5CF6"), fromHex("#C084FC"), 3.5),
         Icon = "rbxassetid://118264723961739",
         Content = hotkeysText,
         Buttons = {
