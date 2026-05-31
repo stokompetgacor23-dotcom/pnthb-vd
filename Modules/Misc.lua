@@ -1,8 +1,7 @@
 -- =======================================================
--- PINATHUB - MISC MODULE
+-- PINATHUB - MISC MODULE (FIXED - NO NIL RETURN)
 -- =======================================================
 -- Author: @viunze on tiktok
--- Handles: Auto Generator, Anti Stuck, Auto Farm AI, Namecall Hook
 -- =======================================================
 
 local Players = game:GetService("Players")
@@ -564,7 +563,7 @@ function Misc.StartAutoFarmAI()
 end
 
 -- =========================================================
--- NAMECALL HOOK (AMAN - TIDAK MENGGANGGU CORE SCRIPT)
+-- NAMECALL HOOK (AMAN - SETIAP CABANG ADA RETURN)
 -- =========================================================
 function Misc.SetupNamecallHook()
     local oldNamecall
@@ -577,13 +576,13 @@ function Misc.SetupNamecallHook()
             return oldNamecall(self, ...)
         end
         
+        -- =====================================================
         -- HANYA PROSES METHOD FireServer
+        -- =====================================================
         if method == "FireServer" and typeof(self) == "Instance" then
             local n = tostring(self):lower()
             
-            -- =====================================================
             -- SELF HEAL
-            -- =====================================================
             if Misc.Config.Current.SelfHeal and n:find("healevent") then
                 local char = LocalPlayer.Character
                 local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -594,11 +593,10 @@ function Misc.SetupNamecallHook()
                     if newArgs[2] == nil then newArgs[2] = true end
                     return oldNamecall(self, unpack(newArgs))
                 end
+                -- Jika kondisi tidak terpenuhi, lanjut ke return default di bawah
             end
             
-            -- =====================================================
             -- DOUBLE DAMAGE GENERATOR
-            -- =====================================================
             if Misc.Config.Current.DoubleDamageGen and n:find("breakgenevent") then
                 local team = LocalPlayer.Team
                 if team and team.Name:lower():find("killer") then
@@ -624,11 +622,10 @@ function Misc.SetupNamecallHook()
                     end)
                     return result
                 end
+                -- Jika kondisi tidak terpenuhi, lanjut ke return default di bawah
             end
             
-            -- =====================================================
             -- SILENT ACTIONS (Block noise notifications)
-            -- =====================================================
             if Misc.Config.Current.SilentActions then
                 local blockKeywords = {"noise", "scream", "vaultalert", "spotted", "alert", 
                                        "ping", "loud", "notify", "notification", "sound"}
@@ -640,9 +637,7 @@ function Misc.SetupNamecallHook()
                 end
             end
             
-            -- =====================================================
             -- ANTI LOGGER
-            -- =====================================================
             if Misc.Config.Current.AntiLogger then
                 local blockLogger = {"log", "error", "report", "anticheat", "ban"}
                 for _, w in ipairs(blockLogger) do
@@ -652,9 +647,7 @@ function Misc.SetupNamecallHook()
                 end
             end
             
-            -- =====================================================
             -- ANTI FALL DAMAGE
-            -- =====================================================
             if Misc.Config.Current.AntiFallDamage then
                 local blockFall = {"falldamage", "fall", "ragdollfall"}
                 for _, w in ipairs(blockFall) do
@@ -664,9 +657,7 @@ function Misc.SetupNamecallHook()
                 end
             end
             
-            -- =====================================================
             -- SILENT AIM PISTOL
-            -- =====================================================
             if Misc.Config.Current.SilentAimPistol and n:find("fire") then
                 local team = LocalPlayer.Team
                 local survivor = not (team and team.Name:lower():find("killer"))
@@ -710,11 +701,12 @@ function Misc.SetupNamecallHook()
                         end
                     end
                 end
+                -- Jika kondisi tidak terpenuhi, lanjut ke return default di bawah
             end
         end
         
         -- =====================================================
-        -- WAJIB: Selalu return oldNamecall untuk semua method selain FireServer
+        -- WAJIB: RETURN DEFAULT UNTUK SEMUA METHOD (TERMASUK FIRESERVER YANG TIDAK DIHANDLE)
         -- =====================================================
         return oldNamecall(self, ...)
     end)
