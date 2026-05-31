@@ -24,13 +24,11 @@ local function noop() end
 local set_clipboard = setclipboard or (syn and syn.setclipboard) or noop
 
 -- ============================================================
--- GRADIENT HELPER (Fixed Safe Smooth Wave)
+-- GRADIENT HELPER (Smooth Wave Neon Style)
 -- ============================================================
 local function gradient(text, color1, color2, speed)
     if type(text) ~= "string" or text == "" then return "" end
-    
-    -- JIKA SPEED TIDAK DIISI (NIL), OTOMATIS GUNAKAN KECEPATAN STANDARD (3.5)
-    speed = tonumber(speed) or 3.5
+    if not speed then speed = 3.5 end -- FIX: Default speed jika tidak disediakan
     
     local chars = {}
     for _, c in utf8.codes(text) do 
@@ -42,10 +40,9 @@ local function gradient(text, color1, color2, speed)
     local t = os.clock() * speed
     
     for i = 1, len do
-        local wave = math.sin(t - (i * 0.5)) 
-        local leraRatio = (wave + 1) / 2 
+        local wave = math.sin(t - (i * 0.5))
+        local leraRatio = (wave + 1) / 2
         local blendedColor = color1:Lerp(color2, leraRatio)
-        
         result[i] = string.format('<font color="#%s">%s</font>', blendedColor:ToHex(), chars[i])
     end
     
@@ -60,10 +57,9 @@ local titleAnimationConnection = nil
 local function startTitleAnimation(window)
     if titleAnimationConnection then return end
     
-    -- Menggunakan warna Ungu Neon dan Abu-abu Neon sesuai request
-    local NeonPurple = Color3.fromHex("#A855F7") -- Ungu Neon Terang
-    local NeonGray   = Color3.fromHex("#9CA3AF") -- Abu-abu Neon (Sleek Gray)
-    local AnimSpeed  = 3.5                        -- Mengatur kecepatan jalannya gelombang warna
+    local NeonPurple = Color3.fromHex("#A855F7")
+    local NeonGray   = Color3.fromHex("#9CA3AF")
+    local AnimSpeed  = 3.5
 
     titleAnimationConnection = game:GetService("RunService").RenderStepped:Connect(function()
         if not window or not window.SetTitle then 
@@ -74,7 +70,6 @@ local function startTitleAnimation(window)
             return
         end
         
-        -- Memproses teks gradasi berjalan
         local animatedText = gradient("PINATHUB", NeonPurple, NeonGray, AnimSpeed)
         window:SetTitle("<b>" .. animatedText .. "</b>")
     end)
@@ -175,7 +170,7 @@ PINATHUB - BY @viunze
 ]]
     
     self.WindUI:Popup({
-        Title = gradient("PINATHUB", Color3.fromHex("#8B5CF6"), Color3.fromHex("#C084FC")),
+        Title = gradient("PINATHUB", Color3.fromHex("#8B5CF6"), Color3.fromHex("#C084FC"), 3.5),
         Icon = "rbxassetid://118264723961739",
         Content = hotkeysText,
         Buttons = {
