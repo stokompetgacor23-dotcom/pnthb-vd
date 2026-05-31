@@ -241,7 +241,7 @@ function UI:Init()
     utilitySection:Button({ Title = "Force Reset State (Anti-Stuck)", Icon = "lucide:refresh-cw", Callback = function() misc.TriggerAntiStuck() end })
     
     -- ============================================
-    -- MISC TAB (Generator, Auto Farm, Protection)
+    -- MISC TAB (Generator, Auto Farm, Protection, Allow Jump)
     -- ============================================
     local genSection = MiscTab:Section({ Title = "Generator" })
     genSection:Toggle({ Title = "Auto Generator", Value = config.Current.AutoGenerator, Callback = function(v) config.Set("AutoGenerator", v) end })
@@ -258,8 +258,41 @@ function UI:Init()
     protectionSection:Toggle({ Title = "Anti Aura", Value = getgenv().AntiAura or false, Callback = function(v) getgenv().AntiAura = v end })
     protectionSection:Divider()
     
-    local movementHelperSection = MiscTab:Section({ Title = "Jump" })
-    movementHelperSection:Toggle({ Title = "Allow Jump", Value = getgenv().ALLOW_JUMP_ON_STUCK or false, Callback = function(v) getgenv().ALLOW_JUMP_ON_STUCK = v end })
+    -- =========================================================
+    -- ALLOW JUMP SECTION (FIXED - Terhubung ke player.ToggleAllowJump)
+    -- =========================================================
+    local jumpSection = MiscTab:Section({ Title = "Jump" })
+    
+    -- State lokal untuk toggle
+    local jumpEnabled = false
+    
+    jumpSection:Toggle({ 
+        Title = "Allow Jump", 
+        Desc = "Maksa game untuk mengizinkan lompatan meskipun dinonaktifkan (Cooldown: 2 detik)",
+        Value = false, 
+        Callback = function(v)
+            jumpEnabled = v
+            if v then
+                -- Panggil fungsi EnableAllowJump dari Player module
+                if player.EnableAllowJump then
+                    player.EnableAllowJump()
+                else
+                    warn("[PINATHUB] player.EnableAllowJump not found!")
+                end
+                if self.Window then
+                    self.Window:Notify("Allow Jump", "Jumping force-enabled! Press Space to jump.", 2)
+                end
+            else
+                -- Panggil fungsi DisableAllowJump dari Player module
+                if player.DisableAllowJump then
+                    player.DisableAllowJump()
+                end
+                if self.Window then
+                    self.Window:Notify("Allow Jump", "Jumping restored to normal", 2)
+                end
+            end
+        end 
+    })
     
     -- ============================================
     -- COMMUNITY TAB
@@ -303,7 +336,7 @@ function UI:Init()
     task.wait(1)
     self.Window:Notify("PINATHUB", "Loaded!", 3)
     
-    print("Loaded")
+    print("PINATHUB UI Loaded with Brainrot Style")
     
     return self
 end
