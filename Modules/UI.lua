@@ -83,7 +83,7 @@ local function startTitleAnimation(window)
         end
         
         local animatedText = gradient("PINATHUB", NeonPurple, NeonGray, AnimSpeed)
-        window:SetTitle("<b>" .. animatedText .. "</b>")
+        pcall(function() window:SetTitle("<b>" .. animatedText .. "</b>") end)
     end)
 end
 
@@ -95,6 +95,23 @@ local function loadWindUI()
         return loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
     end)
     return success and result or nil
+end
+
+-- ============================================
+-- SAFE NOTIFY HELPER
+-- ============================================
+local function safeNotify(window, windui, title, msg, duration)
+    pcall(function()
+        if window and window.Notify then
+            window:Notify(title, msg, duration)
+        elseif window and window.Notification then
+            window:Notification(title, msg, duration)
+        elseif windui and windui.Notify then
+            windui:Notify(title, msg, duration)
+        elseif windui and windui.Notification then
+            windui:Notification(title, msg, duration)
+        end
+    end)
 end
 
 -- ============================================
@@ -170,33 +187,40 @@ function UI:ShowWelcomePopup(callback)
 HOTKEYS
 
 PC / LAPTOP
-  - Press [K] → Toggle GUI
-  - Press [R] → Toggle Moonwalk
-  - Press [L] → Anti-Stuck
+  - Press [K] -> Toggle GUI
+  - Press [R] -> Toggle Moonwalk
+  - Press [L] -> Anti-Stuck
 
 MOBILE
-  - Tap floating logo → Toggle GUI
-  - Tap Moonwalk button → Toggle Moonwalk
+  - Tap floating logo -> Toggle GUI
+  - Tap Moonwalk button -> Toggle Moonwalk
 
 PINATHUB - BY @viunze
 ]]
     
-    self.WindUI:Popup({
-        Title = gradient("PINATHUB", fromHex("#8B5CF6"), fromHex("#C084FC"), 3.5),
-        Icon = "rbxassetid://118264723961739",
-        Content = hotkeysText,
-        Buttons = {
-            {
-                Title = "Continue to Hub",
-                Icon = "lucide:shield",
-                Variant = "Primary",
-                Callback = function()
-                    popupClosed = true
-                    if callback then callback() end
-                end
+    pcall(function()
+        self.WindUI:Popup({
+            Title = gradient("PINATHUB", fromHex("#8B5CF6"), fromHex("#C084FC"), 3.5),
+            Icon = "rbxassetid://118264723961739",
+            Content = hotkeysText,
+            Buttons = {
+                {
+                    Title = "Continue to Hub",
+                    Icon = "lucide:shield",
+                    Variant = "Primary",
+                    Callback = function()
+                        popupClosed = true
+                        if callback then callback() end
+                    end
+                }
             }
-        }
-    })
+        })
+    end)
+    
+    -- Timeout fallback: jika popup tidak support atau gagal, lanjut otomatis setelah 3 detik
+    task.delay(3, function()
+        popupClosed = true
+    end)
     
     repeat task.wait() until popupClosed
 end
@@ -206,9 +230,7 @@ end
 -- ============================================
 function UI:ShowHotkeysNotification()
     task.wait(1.5)
-    if self.Window then
-        self.Window:Notify("Hotkeys", "K = Toggle GUI | R = Moonwalk | L = Anti-Stuck", 5)
-    end
+    safeNotify(self.Window, self.WindUI, "Hotkeys", "K = Toggle GUI | R = Moonwalk | L = Anti-Stuck", 5)
 end
 
 -- ============================================
@@ -281,16 +303,12 @@ function UI:Init()
                 local hum = char and char:FindFirstChild("Humanoid")
                 if hum then hum.AutoRotate = true end
             end
-            if self.Window then
-                self.Window:Notify("Moonwalk", newState and "ON" or "OFF", 1)
-            end
+            safeNotify(self.Window, self.WindUI, "Moonwalk", newState and "ON" or "OFF", 1)
         end
         
         if input.KeyCode == Enum.KeyCode.L then
             misc.TriggerAntiStuck()
-            if self.Window then
-                self.Window:Notify("Anti-Stuck", "Triggered!", 1)
-            end
+            safeNotify(self.Window, self.WindUI, "Anti-Stuck", "Triggered!", 1)
         end
     end)
     
@@ -400,16 +418,12 @@ function UI:Init()
                 if player.EnableAllowJump then
                     player.EnableAllowJump()
                 end
-                if self.Window then
-                    self.Window:Notify("Allow Jump", "Jumping force-enabled! Press Space to jump.", 2)
-                end
+                safeNotify(self.Window, self.WindUI, "Allow Jump", "Jumping force-enabled! Press Space to jump.", 2)
             else
                 if player.DisableAllowJump then
                     player.DisableAllowJump()
                 end
-                if self.Window then
-                    self.Window:Notify("Allow Jump", "Jumping restored to normal", 2)
-                end
+                safeNotify(self.Window, self.WindUI, "Allow Jump", "Jumping restored to normal", 2)
             end
         end 
     })
@@ -424,7 +438,7 @@ function UI:Init()
         Callback = function()
             if set_clipboard then
                 set_clipboard("https://chat.whatsapp.com/Cxr7poqqID6Ha6C2MfFOMU")
-                self.Window:Notify("Copied!", "WhatsApp link copied!", 2)
+                safeNotify(self.Window, self.WindUI, "Copied!", "WhatsApp link copied!", 2)
             end
         end
     })
@@ -434,7 +448,7 @@ function UI:Init()
         Callback = function()
             if set_clipboard then
                 set_clipboard("https://discord.gg/eDbaHKEf7G")
-                self.Window:Notify("Copied!", "Discord link copied!", 2)
+                safeNotify(self.Window, self.WindUI, "Copied!", "Discord link copied!", 2)
             end
         end
     })
@@ -444,15 +458,15 @@ function UI:Init()
         Callback = function()
             if set_clipboard then
                 set_clipboard("https://tiktok.com/@viunze")
-                self.Window:Notify("Copied!", "TikTok profile copied!", 2)
+                safeNotify(self.Window, self.WindUI, "Copied!", "TikTok profile copied!", 2)
             end
         end
     })
     
     -- OPEN WINDOW
-    self.Window:Open()
+    pcall(function() self.Window:Open() end)
     task.wait(0.5)
-    self.Window:Notify("PINATHUB", "Loaded! Press K to toggle GUI | R = Moonwalk | L = Anti-Stuck", 5)
+    safeNotify(self.Window, self.WindUI, "PINATHUB", "Loaded! Press K to toggle GUI | R = Moonwalk | L = Anti-Stuck", 5)
     
     print("PINATHUB Loaded")
     
