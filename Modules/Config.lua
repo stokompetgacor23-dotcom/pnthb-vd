@@ -4,21 +4,13 @@
 
 local Config = {}
 
--- =========================================================
--- DEFAULT CONFIGURATION
--- =========================================================
 Config.Defaults = {
-    -- Global
     Premium = false,
-    
-    -- Movement
     SpeedBoost = false,
     BoostSpeed = 8,
     MoonwalkEnabled = false,
     MoonwalkZigzagSpeed = 11,
     MoonwalkBoostPower = 1.08,
-    
-    -- Combat
     AutoParry = false,
     ParryDistance = 10,
     ParryMatchup = "Auto",
@@ -38,14 +30,10 @@ Config.Defaults = {
     AttackRange = 10,
     SilentAimPistol = false,
     SilentAimFOV = 180,
-    
-    -- Generator
     AutoGenerator = false,
     AutoGeneratorMode = "Perfect",
     GeneratorPerfectOffsetStart = 102,
     GeneratorPerfectOffsetEnd = 108,
-    
-    -- Misc
     SelfHeal = false,
     AntiFallDamage = false,
     AntiLogger = true,
@@ -54,8 +42,6 @@ Config.Defaults = {
     DoubleDamageGen = false,
     SilentActions = false,
     AutoFarmBot = false,
-    
-    -- Visuals
     CustomCameraFOV = false,
     CameraFOVValue = 100,
     ESP_Survivor_Name = false,
@@ -67,38 +53,16 @@ Config.Defaults = {
     ESP_Pallet = false,
     ESP_Hook = false,
     ESP_SCP = false,
-    
-    -- FPP Mode
     FPPEnabled = false,
 }
 
--- =========================================================
--- CURRENT VALUES
--- =========================================================
 Config.Current = {}
+for k, v in pairs(Config.Defaults) do Config.Current[k] = v end
 
-for k, v in pairs(Config.Defaults) do
-    Config.Current[k] = v
-end
+function Config.Get(key) return Config.Current[key] end
+function Config.Set(key, value) Config.Current[key] = value end
+function Config.GetAll() return Config.Current end
 
--- =========================================================
--- GET/SET METHODS
--- =========================================================
-function Config.Get(key)
-    return Config.Current[key]
-end
-
-function Config.Set(key, value)
-    Config.Current[key] = value
-end
-
-function Config.GetAll()
-    return Config.Current
-end
-
--- =========================================================
--- ESP COLORS
--- =========================================================
 Config.ESP_COLORS = {
     Killer = Color3.fromRGB(255, 93, 108),
     Survivor = Color3.fromRGB(0, 255, 34),
@@ -108,51 +72,28 @@ Config.ESP_COLORS = {
     Hook = Color3.fromRGB(252, 116, 116)
 }
 
--- =========================================================
--- MASK NAMES & COLORS
--- =========================================================
 Config.MaskNames = {
-    ["Abysswalker"] = "ABYSSWALKER",
-    ["Cure"] = "CURE",
-    ["Hidden"] = "HIDDEN",
-    ["Killer"] = "THE KILLER",
-    ["Masked"] = "PALA AYAM",
-    ["Stalker"] = "STALKER",
-    ["Veil"] = "VEIL",
-    ["Slasher"] = "SLASHER",
+    Abysswalker = "ABYSSWALKER", Cure = "CURE", Hidden = "HIDDEN",
+    Killer = "THE KILLER", Masked = "PALA AYAM", Stalker = "STALKER",
+    Veil = "VEIL", Slasher = "SLASHER",
 }
 
 Config.MaskColors = {
-    ["Abysswalker"] = Color3.fromRGB(110, 20, 255),
-    ["Cure"] = Color3.fromRGB(0, 54, 156),
-    ["Hidden"] = Color3.fromRGB(170, 170, 170),
-    ["Killer"] = Color3.fromRGB(255, 40, 40),
-    ["Masked"] = Color3.fromRGB(255, 90, 20),
-    ["Stalker"] = Color3.fromRGB(255, 0, 140),
-    ["Veil"] = Color3.fromRGB(0, 140, 255),
-    ["Slasher"] = Color3.fromRGB(180, 0, 255),
+    Abysswalker = Color3.fromRGB(110, 20, 255), Cure = Color3.fromRGB(0, 54, 156),
+    Hidden = Color3.fromRGB(170, 170, 170), Killer = Color3.fromRGB(255, 40, 40),
+    Masked = Color3.fromRGB(255, 90, 20), Stalker = Color3.fromRGB(255, 0, 140),
+    Veil = Color3.fromRGB(0, 140, 255), Slasher = Color3.fromRGB(180, 0, 255),
 }
 
--- =========================================================
--- KILLER PROFILES
--- =========================================================
 Config.KillerProfiles = {
-    Killer = { BonusDist = 1, Delay = 0.04 },
-    Abysswalker = { BonusDist = 3.5, Delay = 0.12 },
-    Hidden = { BonusDist = 2.2, Delay = 0 },
-    Masked = { BonusDist = 1.5, Delay = 0.05 },
-    Stalker = { BonusDist = 1.8, Delay = 0 },
-    Veil = { BonusDist = 3.2, Delay = 0.04 },
-    Slasher = { BonusDist = 1.2, Delay = 0.05 },
-    Cure = { BonusDist = 2, Delay = 0.03 },
+    Killer = { BonusDist = 1, Delay = 0.04 }, Abysswalker = { BonusDist = 3.5, Delay = 0.12 },
+    Hidden = { BonusDist = 2.2, Delay = 0 }, Masked = { BonusDist = 1.5, Delay = 0.05 },
+    Stalker = { BonusDist = 1.8, Delay = 0 }, Veil = { BonusDist = 3.2, Delay = 0.04 },
+    Slasher = { BonusDist = 1.2, Delay = 0.05 }, Cure = { BonusDist = 2, Delay = 0.03 },
 }
 
--- =========================================================
--- IGNORE SKILLS
--- =========================================================
 Config.IgnoreSkills = {
-    "Veil", "Masked", "Stalker", "Invisible",
-    "Ghost", "Phase", "Dash", "Warp", "Teleport"
+    "Veil", "Masked", "Stalker", "Invisible", "Ghost", "Phase", "Dash", "Warp", "Teleport"
 }
 
 return Config
