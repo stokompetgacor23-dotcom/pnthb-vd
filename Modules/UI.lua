@@ -336,7 +336,7 @@ function UI:Init()
     task.wait(1)
     self.Window:Notify("PINATHUB", "Loaded!", 3)
     
-    print("PINATHUB UI Loaded with Brainrot Style")
+    print("PINATHUB Loaded")
     
     return self
 end
