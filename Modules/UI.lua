@@ -258,8 +258,8 @@ function UI:Init()
     protectionSection:Toggle({ Title = "Anti Aura", Value = getgenv().AntiAura or false, Callback = function(v) getgenv().AntiAura = v end })
     protectionSection:Divider()
     
-    local movementHelperSection = MiscTab:Section({ Title = "Movement Helper" })
-    movementHelperSection:Toggle({ Title = "Allow Jump When Stuck", Value = getgenv().ALLOW_JUMP_ON_STUCK or false, Callback = function(v) getgenv().ALLOW_JUMP_ON_STUCK = v end })
+    local movementHelperSection = MiscTab:Section({ Title = "Jump" })
+    movementHelperSection:Toggle({ Title = "Allow Jump", Value = getgenv().ALLOW_JUMP_ON_STUCK or false, Callback = function(v) getgenv().ALLOW_JUMP_ON_STUCK = v end })
     
     -- ============================================
     -- COMMUNITY TAB
@@ -301,9 +301,9 @@ function UI:Init()
     -- ============================================
     self.Window:Open()
     task.wait(1)
-    self.Window:Notify("PINATHUB", "Loaded successfully!", 3)
+    self.Window:Notify("PINATHUB", "Loaded!", 3)
     
-    print("UI initialized with Brainrot Style - Features intact!")
+    print("Loaded")
     
     return self
 end
