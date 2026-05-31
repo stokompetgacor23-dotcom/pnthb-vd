@@ -1,10 +1,22 @@
 -- =======================================================
--- PINATHUB - MAIN ENTRY POINT
+-- PINATHUB - MAIN ENTRY POINT (Loader-Compatible)
 -- =======================================================
 -- Author: @viunze on tiktok
 -- Architecture: Clean Modular with WindUI Swing Obby Brainrot Style
 -- =======================================================
 
+-- =========================================================
+-- TERIMA MODULES DARI LOADER
+-- =========================================================
+local Modules = ... -- Modul-modul dikirim dari loader script
+
+if not Modules or not Modules.Utils then
+    error("[PINATHUB] Modules not provided by loader!")
+end
+
+-- =========================================================
+-- INITIALIZATION
+-- =========================================================
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Players = game:GetService("Players")
@@ -93,38 +105,9 @@ else
     return
 end
 
-local PinatHubFolder = ReplicatedStorageRef:FindFirstChild("PinatHub")
-if not PinatHubFolder then
-    PinatHubFolder = Instance.new("Folder")
-    PinatHubFolder.Name = "PinatHub"
-    PinatHubFolder.Parent = ReplicatedStorageRef
-end
-
-local ModulesFolder = PinatHubFolder:FindFirstChild("Modules")
-if not ModulesFolder then
-    ModulesFolder = Instance.new("Folder")
-    ModulesFolder.Name = "Modules"
-    ModulesFolder.Parent = PinatHubFolder
-end
-
-local function LoadModule(moduleName)
-    local module = ModulesFolder:FindFirstChild(moduleName)
-    if module and module:IsA("ModuleScript") then
-        return require(module)
-    end
-    error("Module not found: " .. moduleName)
-end
-
-local Modules = {
-    Utils = LoadModule("Utils"),
-    Config = LoadModule("Config"),
-    ESP = LoadModule("ESP"),
-    Player = LoadModule("Player"),
-    Combat = LoadModule("Combat"),
-    Misc = LoadModule("Misc"),
-    UI = LoadModule("UI")
-}
-
+-- =========================================================
+-- INJECT DEPENDENCIES
+-- =========================================================
 Modules.ESP.Utils = Modules.Utils
 Modules.ESP.Config = Modules.Config
 Modules.ESP.WindUI = WindUI
@@ -148,6 +131,9 @@ Modules.Misc.Stats = StatsRef
 Modules.Misc.PathfindingService = PathfindingServiceRef
 Modules.Misc.TargetGui = TargetGui
 
+-- =========================================================
+-- INITIALIZE MODULES
+-- =========================================================
 Modules.ESP.InitSCPFolder()
 Modules.ESP.StartMapDetector()
 Modules.ESP.UpdateSCPLoop()
@@ -161,12 +147,18 @@ Modules.Misc.StartAntiStuckThread()
 Modules.Misc.StartAutoFarmAI()
 Modules.Misc.SetupNamecallHook()
 
+-- =========================================================
+-- INITIALIZE UI
+-- =========================================================
 local UI = Modules.UI
 UI.WindUI = WindUI
 UI.TargetGui = TargetGui
 UI.Modules = Modules
 UI:Init()
 
+-- =========================================================
+-- RENDER STEP CONNECTIONS
+-- =========================================================
 local CachedTarget = nil
 local LastTargetCheck = 0
 local cachedIsCarrying = false
