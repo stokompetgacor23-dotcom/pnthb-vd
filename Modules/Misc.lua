@@ -261,7 +261,7 @@ function Misc.TriggerAntiStuck()
 end
 
 -- =========================================================
--- AUTO FARM AI (BRAIN THREAD)
+-- AUTO FARM AI (BRAIN THREAD) - FIXED
 -- =========================================================
 function Misc.StartAutoFarmAI()
     getgenv().AIFinalTarget = nil
@@ -273,7 +273,18 @@ function Misc.StartAutoFarmAI()
             if not Misc.Config.Current.AutoFarmBot then 
                 getgenv().CachedWaypoints = nil
                 getgenv().AIFinalTarget = nil
+                -- [FIX] Matikan Auto Generator juga
+                if Misc.Config.Current.AutoGenerator then
+                    Misc.Config.Set("AutoGenerator", false)
+                end
                 continue 
+            end
+            
+            -- [FIX] NYALAKAN AUTO GENERATOR OTOMATIS SAAT AI AKTIF
+            if not Misc.Config.Current.AutoGenerator then
+                Misc.Config.Set("AutoGenerator", true)
+                Misc.Config.Set("AutoGeneratorMode", "Perfect")
+                print("[PINATHUB] Auto Generator enabled by AI")
             end
             
             pcall(function()
@@ -395,22 +406,34 @@ function Misc.StartAutoFarmAI()
                     targetPos = injuredTeammate.HumanoidRootPart.Position
                     actionState = "Healing"
                     
+                    -- [FIX] PASTIKAN HEAL REMOTE BEKERJA
                     if shortestMateDist <= 12 then
                         if not Misc.SearchHealRemote then
                             local remotes = Misc.ReplicatedStorage:FindFirstChild("Remotes")
-                            Misc.CachedHealEvent = remotes and (remotes:FindFirstChild("HealEvent", true) 
-                                or remotes:FindFirstChild("RequestHeal", true) 
-                                or remotes:FindFirstChild("ReviveEvent", true))
+                            if remotes then
+                                Misc.CachedHealEvent = remotes:FindFirstChild("HealEvent", true) 
+                                    or remotes:FindFirstChild("RequestHeal", true) 
+                                    or remotes:FindFirstChild("ReviveEvent", true)
+                            end
                             Misc.SearchHealRemote = true
                         end
                         
                         if Misc.CachedHealEvent then
+                            -- [FIX] PASTIKAN ARGUMEN HEAL SESUAI
                             pcall(function() 
                                 Misc.CachedHealEvent:FireServer(injuredTeammate, 100) 
                             end)
                             pcall(function() 
                                 Misc.CachedHealEvent:FireServer(injuredTeammate, true) 
                             end)
+                            if Misc.WindUI then
+                                Misc.WindUI:Notify({
+                                    Title = "AI Healing",
+                                    Content = "Healing injured teammate!",
+                                    Icon = "lucide:heart-handshake",
+                                    Duration = 2
+                                })
+                            end
                         end
                         
                         getgenv().CachedWaypoints = nil
@@ -452,18 +475,26 @@ function Misc.StartAutoFarmAI()
                             Idle = "lucide:coffee"
                         }
                         Misc.WindUI:Notify({
-                            Title = "AI State: " .. string.upper(actionState),
-                            Content = "Switching AI priority to: " .. actionState,
+                            Title = "AI: " .. string.upper(actionState),
+                            Content = actionState == "Evading" and "Running from killer!"
+                                or actionState == "Healing" and "Healing teammate!"
+                                or actionState == "Repairing" and "Fixing generator!"
+                                or actionState == "Escaping" and "Opening gate!"
+                                or "Idle",
                             Icon = notifIcons[actionState] or "lucide:bot",
-                            Duration = 3
+                            Duration = 2
                         })
                     end
                 end
                 
                 getgenv().AIFinalTarget = targetPos
                 
-                -- Kalkulasi rute (async)
+                -- [FIX] JIKA ADA TARGET, PASTIKAN AUTO GENERATOR TETAP AKTIF
                 if targetPos then
+                    if not Misc.Config.Current.AutoGenerator then
+                        Misc.Config.Set("AutoGenerator", true)
+                    end
+                    
                     local now = os.clock()
                     local lastPathCalc = getgenv().LastPathCalc or 0
                     local lastTargetPos = getgenv().LastTargetPos or Misc.Utils.v3()
@@ -501,7 +532,7 @@ function Misc.StartAutoFarmAI()
         end
     end)
     
-    -- MOVEMENT THREAD (Eksekusi pergerakan)
+    -- MOVEMENT THREAD (Eksekusi pergerakan) - SAMA SEPERTI FORKT
     task.spawn(function()
         while task.wait(0.05) do
             if not getgenv().PINATHUB_RUNNING then break end
