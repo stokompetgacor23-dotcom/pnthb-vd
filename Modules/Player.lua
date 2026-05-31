@@ -118,4 +118,130 @@ function Player.ResetScope()
     workspace.CurrentCamera.FieldOfView = 70
 end
 
+-- =========================================================
+-- ALLOW JUMP (Force Jump - Berdasarkan Script yang Terbukti)
+-- =========================================================
+
+Player.allowJumpEnabled = false
+Player.lastJumpTime = 0
+Player.jumpCooldown = 2
+Player.jumpRequestConn = nil
+Player.inputBeganConn = nil
+Player.heartbeatConn = nil
+Player.jumpPowerConn = nil
+
+function Player.EnableAllowJump()
+    if Player.allowJumpEnabled then return end
+    
+    local char = LocalPlayer.Character
+    if not char then
+        warn("[PINATHUB] Cannot enable jump: Character not found")
+        return
+    end
+    
+    local humanoid = char:FindFirstChild("Humanoid")
+    if not humanoid then
+        warn("[PINATHUB] Cannot enable jump: Humanoid not found")
+        return
+    end
+    
+    Player.allowJumpEnabled = true
+    
+    -- Set JumpPower ke 50
+    humanoid.JumpPower = 50
+    
+    -- Handle jump function (sama persis dengan script yang berhasil)
+    local function HandleJump()
+        if humanoid.FloorMaterial ~= Enum.Material.Air then
+            local currentTime = os.time()
+            if currentTime - Player.lastJumpTime >= Player.jumpCooldown then
+                pcall(function()
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end)
+                Player.lastJumpTime = currentTime
+            end
+        end
+    end
+    
+    -- Listen untuk tombol Space
+    Player.inputBeganConn = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+        if input.KeyCode == Enum.KeyCode.Space and not gameProcessedEvent then
+            HandleJump()
+        end
+    end)
+    
+    -- Monitor perubahan JumpPower (reset ke 50 jika diubah game)
+    Player.jumpPowerConn = humanoid:GetPropertyChangedSignal("JumpPower"):Connect(function()
+        if Player.allowJumpEnabled and humanoid.JumpPower == 0 then
+            humanoid.JumpPower = 50
+            print("[PINATHUB] Jump Power reset to 50")
+        end
+    end)
+    
+    -- Heartbeat untuk menjaga JumpPower tetap 50
+    Player.heartbeatConn = game:GetService("RunService").Heartbeat:Connect(function()
+        if not Player.allowJumpEnabled then return end
+        
+        local currentChar = LocalPlayer.Character
+        if not currentChar then return end
+        
+        local hum = currentChar:FindFirstChild("Humanoid")
+        if not hum then return end
+        
+        if hum.JumpPower == 0 then
+            hum.JumpPower = 50
+        end
+    end)
+    
+    print("[PINATHUB] Allow Jump enabled - Press Space to jump!")
+    
+    if UI and UI.Window then
+        UI.Window:Notify("Allow Jump", "Jumping force-enabled!", 2)
+    end
+end
+
+function Player.DisableAllowJump()
+    if not Player.allowJumpEnabled then return end
+    Player.allowJumpEnabled = false
+    
+    -- Disconnect semua koneksi
+    if Player.inputBeganConn then
+        Player.inputBeganConn:Disconnect()
+        Player.inputBeganConn = nil
+    end
+    
+    if Player.jumpPowerConn then
+        Player.jumpPowerConn:Disconnect()
+        Player.jumpPowerConn = nil
+    end
+    
+    if Player.heartbeatConn then
+        Player.heartbeatConn:Disconnect()
+        Player.heartbeatConn = nil
+    end
+    
+    -- Reset JumpPower ke normal (50)
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChild("Humanoid")
+        if hum and hum.JumpPower == 0 then
+            hum.JumpPower = 50
+        end
+    end
+    
+    print("[PINATHUB] Allow Jump disabled")
+    
+    if UI and UI.Window then
+        UI.Window:Notify("Allow Jump", "Jumping restored to normal", 2)
+    end
+end
+
+function Player.ToggleAllowJump(state)
+    if state then
+        Player.EnableAllowJump()
+    else
+        Player.DisableAllowJump()
+    end
+end
+
 return Player
