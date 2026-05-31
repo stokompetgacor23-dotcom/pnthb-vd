@@ -23,59 +23,63 @@ UI.TargetGui = nil
 local function noop() end
 local set_clipboard = setclipboard or (syn and syn.setclipboard) or noop
 
--- ============================================
--- GRADIENT HELPER (Brainrot Style - Animated)
--- ============================================
-local function gradient(text, startColor, endColor, timeOffset)
+-- ============================================================
+-- GRADIENT HELPER (Smooth Wave Neon Style)
+-- ============================================================
+local function gradient(text, color1, color2, speed)
     if type(text) ~= "string" or text == "" then return "" end
-    local chars, result = {}, {}
-    for _, c in utf8.codes(text) do chars[#chars + 1] = utf8.char(c) end
-    local len = #chars
-    local div = math.max(len - 1, 1)
-    timeOffset = tonumber(timeOffset) or 0
-    for i = 1, len do
-        local t = math.abs((((i - 1) / div) + timeOffset) % 2 - 1)
-        local color = startColor:Lerp(endColor, t)
-        result[i] = string.format('<font color="#%s">%s</font>', color:ToHex(), chars[i])
+    
+    local chars = {}
+    for _, c in utf8.codes(text) do 
+        table.insert(chars, utf8.char(c)) 
     end
+    
+    local len = #chars
+    local result = table.create(len)
+    local t = os.clock() * speed -- Waktu berjalan berdasarkan speed pembawa
+    
+    for i = 1, len do
+        -- Gelombang sinusoidal berdasarkan posisi huruf (i) dan waktu (t)
+        -- Faktor 0.5 mengatur seberapa rapat sebaran gradasinya
+        local wave = math.sin(t - (i * 0.5)) 
+        
+        -- Mengubah rentang sin (-1 s/d 1) menjadi (0 s/d 1) untuk Lerp
+        local leraRatio = (wave + 1) / 2 
+        
+        -- Interpolasi warna yang sangat smooth
+        local blendedColor = color1:Lerp(color2, leraRatio)
+        
+        result[i] = string.format('<font color="#%s">%s</font>', blendedColor:ToHex(), chars[i])
+    end
+    
     return table.concat(result)
 end
 
--- ============================================
--- ANIMATED TITLE (Neon Gradient Moving)
--- ============================================
+-- ============================================================
+-- ANIMATED TITLE (Neon Purple & Gray Wave Moving)
+-- ============================================================
 local titleAnimationConnection = nil
 
 local function startTitleAnimation(window)
     if titleAnimationConnection then return end
     
-    local colors = {
-        { Color3.fromHex("#8B5CF6"), Color3.fromHex("#A855F7") },
-        { Color3.fromHex("#A855F7"), Color3.fromHex("#C084FC") },
-        { Color3.fromHex("#C084FC"), Color3.fromHex("#6B7280") },
-        { Color3.fromHex("#6B7280"), Color3.fromHex("#8B5CF6") },
-    }
-    local colorIndex = 1
-    local offset = 0
-    
-    titleAnimationConnection = game:GetService("RunService").RenderStepped:Connect(function(dt)
-        if not window then 
-            if titleAnimationConnection then titleAnimationConnection:Disconnect() end
+    -- Menggunakan warna Ungu Neon dan Abu-abu Neon sesuai request
+    local NeonPurple = Color3.fromHex("#A855F7") -- Ungu Neon Terang
+    local NeonGray   = Color3.fromHex("#9CA3AF") -- Abu-abu Neon (Sleek Gray)
+    local AnimSpeed  = 3.5                        -- Mengatur kecepatan jalannya gelombang warna
+
+    titleAnimationConnection = game:GetService("RunService").RenderStepped:Connect(function()
+        if not window or not window.SetTitle then 
+            if titleAnimationConnection then 
+                titleAnimationConnection:Disconnect() 
+            end
             titleAnimationConnection = nil
             return
         end
         
-        offset = (offset + dt * 0.8) % 2
-        local colorPair = colors[colorIndex]
-        
-        if window.SetTitle then
-            local animatedText = gradient("PINATHUB", colorPair[1], colorPair[2], offset)
-            window:SetTitle("<b>" .. animatedText .. "</b>")
-        end
-        
-        if tick() % 3 < 0.1 then
-            colorIndex = (colorIndex % #colors) + 1
-        end
+        -- Memproses teks gradasi berjalan
+        local animatedText = gradient("PINATHUB", NeonPurple, NeonGray, AnimSpeed)
+        window:SetTitle("<b>" .. animatedText .. "</b>")
     end)
 end
 
