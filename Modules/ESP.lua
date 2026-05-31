@@ -176,4 +176,120 @@ function ESP.IsSCP(v) if not (v and v:IsA("Model")) then return false end local 
 function ESP.RemoveSCP(v) local h = ESP.SCPCache[v]; if h then pcall(function() h:Destroy() end) end; ESP.SCPCache[v] = nil end
 function ESP.CreateSCP(v)
     if not ESP.Config.Current.ESP_SCP or ESP.SCPCache[v] or not (v and v.Parent) or not ESP.IsSCP(v) then return end
-    local root = v:FindFirstChild("HumanoidRootPart", true)
+    local root = v:FindFirstChild("HumanoidRootPart", true) or v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart", true)
+    if not root then return end
+    local h = Instance.new("Highlight")
+    h.Name = "SCPESP"; h.Adornee = v; h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    h.FillColor = Color3.fromRGB(170, 0, 255); h.OutlineColor = Color3.fromRGB(255, 220, 255)
+    h.FillTransparency = 0.78; h.OutlineTransparency = 0.03; h.Parent = ESP.SCPFolder
+    ESP.SCPCache[v] = h
+    v.AncestryChanged:Connect(function(_, p) if not p then ESP.RemoveSCP(v) end end)
+    local hum = v:FindFirstChildOfClass("Humanoid")
+    if hum then hum.Died:Connect(function() ESP.RemoveSCP(v) end) end
+end
+function ESP.ScanSCP() for _, v in ipairs(workspace:GetChildren()) do if ESP.IsSCP(v) then ESP.CreateSCP(v) end end end
+function ESP.ConnectSCP()
+    if ESP.SCPConnection then ESP.SCPConnection:Disconnect() end
+    ESP.SCPConnection = workspace.ChildAdded:Connect(function(v)
+        if not ESP.Config.Current.ESP_SCP or not (v and v:IsA("Model")) then return end
+        task.delay(0.12, function() if v and v.Parent and ESP.IsSCP(v) then ESP.CreateSCP(v) end end)
+    end)
+end
+function ESP.UpdateSCPLoop()
+    task.spawn(function()
+        while task.wait(0.7) do
+            if not getgenv().PINATHUB_RUNNING then break end
+            if not ESP.Config.Current.ESP_SCP then for v in pairs(ESP.SCPCache) do ESP.RemoveSCP(v) end
+            else for v, h in pairs(ESP.SCPCache) do if not (v and v.Parent and h and h.Parent) then ESP.RemoveSCP(v) else if h.Adornee ~= v then h.Adornee = v end; if h.FillTransparency ~= 0.78 then h.FillTransparency = 0.78 end; if h.OutlineTransparency ~= 0.03 then h.OutlineTransparency = 0.03 end end end; ESP.ScanSCP() end
+        end
+    end)
+end
+
+function ESP.RefreshESP()
+    if not workspace.CurrentCamera or #Players:GetPlayers() <= 1 then return end
+    local players = Players:GetPlayers()
+    for _, p in ipairs(players) do if p ~= LocalPlayer then local team = p.Team; local isKiller = team and team.Name and string.find(string.lower(team.Name), "killer") ~= nil; local shouldESP = (isKiller and (ESP.Config.Current.ESP_Killer_Name or ESP.Config.Current.ESP_Killer_Highlight)) or (not isKiller and (ESP.Config.Current.ESP_Survivor_Name or ESP.Config.Current.ESP_Survivor_Highlight)); if shouldESP then ESP.CreatePlayerESP(p, isKiller) else ESP.RemovePlayerESP(p) end end end
+    if not ESP.CachedMapObjects then return end
+    if ESP.Config.Current.ESP_Generator then
+        if not ESP.PrevESPState.Generator then ESP.PrevESPState.Generator = true end
+        local gens = ESP.CachedMapObjects.Generators
+        local newActiveGens = {}
+        for i = 1, #gens do local obj = gens[i]; if obj and obj.Parent then local isFinished = ESP.UpdateGeneratorProgress(obj); if not isFinished then table.insert(newActiveGens, obj) end end end
+        ESP.CachedMapObjects.Generators = newActiveGens
+    elseif ESP.PrevESPState.Generator then for _, obj in ipairs(ESP.CachedMapObjects.Generators) do if obj and obj.Parent then ESP.Utils.RemoveHighlight(obj); local b = obj:FindFirstChild("GenBitchHook"); if b then b:Destroy() end end end; ESP.PrevESPState.Generator = false end
+    if ESP.Config.Current.ESP_Pallet then
+        if not ESP.PrevESPState.Pallet then ESP.PrevESPState.Pallet = true end
+        local pallets = ESP.CachedMapObjects.Pallets
+        local MAX_DISTANCE = 140
+        for i = #pallets, 1, -1 do
+            local pallet = pallets[i]
+            local isValid = pallet and pallet.Parent and pallet:IsDescendantOf(workspace)
+            if isValid then
+                local targetPart = (pallet:IsA("Model") and pallet.PrimaryPart) or pallet:FindFirstChildWhichIsA("BasePart", true) or (pallet:IsA("BasePart") and pallet)
+                local hasVisibleParts = false
+                if targetPart then
+                    if pallet:IsA("BasePart") then hasVisibleParts = pallet.Transparency < 1
+                    else local parts = pallet:GetDescendants(); for j = 1, #parts do local p = parts[j]; if p:IsA("BasePart") and p.Transparency < 1 then hasVisibleParts = true; break end end end
+                end
+                local nLower = string.lower(pallet.Name)
+                local function IsActive(val) return val == true or (type(val) == "number" and val > 0) end
+                local isDropped = IsActive(ESP.Utils.GetGameValue(pallet, "Dropped")) or IsActive(ESP.Utils.GetGameValue(pallet, "IsDropped"))
+                local isBroken = IsActive(ESP.Utils.GetGameValue(pallet, "Broken")) or IsActive(ESP.Utils.GetGameValue(pallet, "IsBroken")) or IsActive(ESP.Utils.GetGameValue(pallet, "Destroyed"))
+                local isFake = string.find(nLower, "fake") or string.find(nLower, "broken") or string.find(nLower, "destroyed")
+                if isDropped or isBroken or isFake or not hasVisibleParts or not targetPart then
+                    local tag = pallet:FindFirstChild("PalletTag"); if tag then tag:Destroy() end
+                    if isDropped or isBroken or isFake then table.remove(pallets, i) end
+                else
+                    local tag = pallet:FindFirstChild("PalletTag")
+                    if not tag then local b = ESP.Utils.CreateBillboardTag("<b>[PALLET]</b>", ESP.Config.ESP_COLORS.Pallet, UDim2.new(0, 50, 0, 18), 6); b.Name = "PalletTag"; b.Parent = pallet; b.Adornee = targetPart; b.MaxDistance = MAX_DISTANCE
+                    else if not tag.Adornee then tag.Adornee = targetPart end; local lbl = tag:FindFirstChild("Label"); if lbl and lbl.TextColor3 ~= ESP.Config.ESP_COLORS.Pallet then lbl.TextColor3 = ESP.Config.ESP_COLORS.Pallet end end
+                end
+            else if pallet then local tag = pallet:FindFirstChild("PalletTag"); if tag then tag:Destroy() end end; table.remove(pallets, i) end
+        end
+    elseif ESP.PrevESPState.Pallet then for _, pallet in ipairs(ESP.CachedMapObjects.Pallets) do if pallet then local tag = pallet:FindFirstChild("PalletTag"); if tag then tag:Destroy() end end end; ESP.PrevESPState.Pallet = false end
+    if ESP.Config.Current.ESP_Gate then
+        if not ESP.PrevESPState.Gate then ESP.PrevESPState.Gate = true end
+        local gates = ESP.CachedMapObjects.Gates
+        for i = #gates, 1, -1 do local gate = gates[i]; if gate and gate.Parent then ESP.Utils.ApplyHighlight(gate, ESP.Config.ESP_COLORS.Gate) else table.remove(gates, i) end end
+    elseif ESP.PrevESPState.Gate then for _, gate in ipairs(ESP.CachedMapObjects.Gates) do if gate and gate.Parent then ESP.Utils.RemoveHighlight(gate) end end; ESP.PrevESPState.Gate = false end
+    if ESP.Config.Current.ESP_Hook then
+        if not ESP.PrevESPState.Hook then ESP.PrevESPState.Hook = true end
+        local hooks = ESP.CachedMapObjects.Hooks
+        for i = #hooks, 1, -1 do local hook = hooks[i]; if hook and hook.Parent then local m = hook:FindFirstChild("Model"); if m then for _, p in ipairs(m:GetDescendants()) do if p:IsA("MeshPart") then ESP.Utils.ApplyHighlight(p, ESP.Config.ESP_COLORS.Hook) end end else ESP.Utils.ApplyHighlight(hook, ESP.Config.ESP_COLORS.Hook) end else table.remove(hooks, i) end end
+    elseif ESP.PrevESPState.Hook then for _, hook in ipairs(ESP.CachedMapObjects.Hooks) do if hook and hook.Parent then local m = hook:FindFirstChild("Model"); if m then for _, p in ipairs(m:GetDescendants()) do if p:IsA("MeshPart") then ESP.Utils.RemoveHighlight(p) end end else ESP.Utils.RemoveHighlight(hook) end end end; ESP.PrevESPState.Hook = false end
+end
+
+function ESP.StartMapDetector()
+    task.spawn(function()
+        local mapWasEmpty = true; local descendantConn = nil
+        while task.wait(2) do
+            if not getgenv().PINATHUB_RUNNING then if descendantConn then descendantConn:Disconnect() end; break end
+            local currentMap = workspace:FindFirstChild("Map")
+            local hasContents = currentMap and #currentMap:GetChildren() > 0
+            if hasContents and mapWasEmpty then
+                mapWasEmpty = false
+                task.delay(8, function()
+                    if currentMap and #currentMap:GetChildren() > 0 then
+                        ESP.UpdateMapCache()
+                        if descendantConn then descendantConn:Disconnect() end
+                        descendantConn = currentMap.DescendantAdded:Connect(function(obj)
+                            local n = obj.Name
+                            if n == "Generator" then table.insert(ESP.CachedMapObjects.Generators, obj)
+                            elseif n == "Hook" then table.insert(ESP.CachedMapObjects.Hooks, obj)
+                            elseif n == "Gate" then table.insert(ESP.CachedMapObjects.Gates, obj)
+                            elseif n == "Pallet" or n == "Palletwrong" then table.insert(ESP.CachedMapObjects.Pallets, obj) end
+                        end)
+                        if ESP.WindUI then ESP.WindUI:Notify({ Title = "Map Loaded", Content = "Found " .. #ESP.CachedMapObjects.Pallets .. " Pallets & " .. #ESP.CachedMapObjects.Generators .. " Gens. Radar Active!", Icon = "lucide:radar" }) end
+                    end
+                end)
+            elseif not hasContents and not mapWasEmpty then
+                mapWasEmpty = true
+                if descendantConn then descendantConn:Disconnect(); descendantConn = nil end
+                ESP.CachedMapObjects.Generators = {}; ESP.CachedMapObjects.Pallets = {}; ESP.CachedMapObjects.Hooks = {}; ESP.CachedMapObjects.Gates = {}
+                ESP.PrevESPState.Generator = false; ESP.PrevESPState.Hook = false; ESP.PrevESPState.Pallet = false; ESP.PrevESPState.Gate = false
+            end
+        end
+    end)
+end
+
+return ESP
