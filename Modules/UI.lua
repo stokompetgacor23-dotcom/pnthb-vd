@@ -44,17 +44,16 @@ end
 -- ============================================
 -- ANIMATED TITLE (Neon Gradient Moving)
 -- ============================================
-local animatedTitle = nil
 local titleAnimationConnection = nil
 
 local function startTitleAnimation(window)
     if titleAnimationConnection then return end
     
     local colors = {
-        { Color3.fromHex("#8B5CF6"), Color3.fromHex("#A855F7") }, -- Ungu
-        { Color3.fromHex("#A855F7"), Color3.fromHex("#C084FC") }, -- Ungu terang
-        { Color3.fromHex("#C084FC"), Color3.fromHex("#6B7280") }, -- Ungu ke abu
-        { Color3.fromHex("#6B7280"), Color3.fromHex("#8B5CF6") }, -- Abu ke ungu
+        { Color3.fromHex("#8B5CF6"), Color3.fromHex("#A855F7") },
+        { Color3.fromHex("#A855F7"), Color3.fromHex("#C084FC") },
+        { Color3.fromHex("#C084FC"), Color3.fromHex("#6B7280") },
+        { Color3.fromHex("#6B7280"), Color3.fromHex("#8B5CF6") },
     }
     local colorIndex = 1
     local offset = 0
@@ -74,7 +73,6 @@ local function startTitleAnimation(window)
             window:SetTitle("<b>" .. animatedText .. "</b>")
         end
         
-        -- Ganti warna setiap 3 detik
         if tick() % 3 < 0.1 then
             colorIndex = (colorIndex % #colors) + 1
         end
@@ -155,24 +153,25 @@ function UI:CreateLogo()
 end
 
 -- ============================================
--- SHOW WELCOME POPUP
+-- SHOW WELCOME POPUP (SEDERHANA, TANPA EMOJI)
 -- ============================================
 function UI:ShowWelcomePopup(callback)
     local popupClosed = false
     
-    -- Hotkeys list untuk popup
-    local hotkeysText = table.concat()
-        "HOTKEYS",
-        "PC / LAPTOP",
-        "   • Press [ K ] → Toggle GUI",
-        "   • Press [ R ] → Toggle Moonwalk",
-        "   • Press [ L ] → Anti-Stuck",
-        "",
-        "MOBILE",
-        "   • Tap floating logo → Toggle GUI",
-        "   • Tap Moonwalk button → Toggle Moonwalk",
-        "PINATHUB - BY @viunze",
-    }, "\n")
+    local hotkeysText = [[
+HOTKEYS
+
+PC / LAPTOP
+  - Press [K] → Toggle GUI
+  - Press [R] → Toggle Moonwalk
+  - Press [L] → Anti-Stuck
+
+MOBILE
+  - Tap floating logo → Toggle GUI
+  - Tap Moonwalk button → Toggle Moonwalk
+
+PINATHUB - BY @viunze
+]]
     
     self.WindUI:Popup({
         Title = gradient("PINATHUB", Color3.fromHex("#8B5CF6"), Color3.fromHex("#C084FC")),
@@ -199,11 +198,9 @@ end
 -- ============================================
 function UI:ShowHotkeysNotification()
     task.wait(1.5)
-    self.Window:Notify(
-        "Hotkeys", 
-        "🔹 K = Toggle GUI 🔹 R = Moonwalk 🔹 L = Anti-Stuck", 
-        5
-    )
+    if self.Window then
+        self.Window:Notify("Hotkeys", "K = Toggle GUI | R = Moonwalk | L = Anti-Stuck", 5)
+    end
 end
 
 -- ============================================
@@ -223,14 +220,10 @@ function UI:Init()
     local combat = self.Modules.Combat
     local misc = self.Modules.Misc
     
-    -- ============================================
     -- SHOW WELCOME POPUP TERLEBIH DAHULU
-    -- ============================================
     self:ShowWelcomePopup()
     
-    -- ============================================
     -- CREATE WINDOW (Brainrot Style)
-    -- ============================================
     self.Window = WindUI:CreateWindow({
         Title = "<b>PINATHUB</b>",
         Author = "@viunze on tiktok",
@@ -242,10 +235,10 @@ function UI:Init()
         UserEnabled = true,
         HasOutline = true,
         SideBarWidth = 150,
-        ToggleKey = Enum.KeyCode.K,  -- Hotkey K untuk toggle GUI
+        ToggleKey = Enum.KeyCode.K,
     })
     
-    -- Start animated title (PINATHUB dengan efek neon bergerak)
+    -- Start animated title
     startTitleAnimation(self.Window)
     
     -- Create Logo
@@ -265,18 +258,13 @@ function UI:Init()
         end
     end)
     
-    -- ============================================
     -- SETUP HOTKEYS NOTIFICATION
-    -- ============================================
     self:ShowHotkeysNotification()
     
-    -- ============================================
     -- SETUP KEYBINDS (R untuk Moonwalk, L untuk Anti-Stuck)
-    -- ============================================
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
         
-        -- Tombol R untuk Moonwalk
         if input.KeyCode == Enum.KeyCode.R then
             local newState = not config.Current.MoonwalkEnabled
             config.Set("MoonwalkEnabled", newState)
@@ -285,19 +273,20 @@ function UI:Init()
                 local hum = char and char:FindFirstChild("Humanoid")
                 if hum then hum.AutoRotate = true end
             end
-            self.Window:Notify("Moonwalk", newState and "ON" or "OFF", 1)
+            if self.Window then
+                self.Window:Notify("Moonwalk", newState and "ON" or "OFF", 1)
+            end
         end
         
-        -- Tombol L untuk Anti-Stuck
         if input.KeyCode == Enum.KeyCode.L then
             misc.TriggerAntiStuck()
-            self.Window:Notify("Anti-Stuck", "Triggered!", 1)
+            if self.Window then
+                self.Window:Notify("Anti-Stuck", "Triggered!", 1)
+            end
         end
     end)
     
-    -- ============================================
     -- TABS (PINATHUB Features)
-    -- ============================================
     local CombatTab = self.Window:Tab({ Title = "Combat", Icon = "sword" })
     local VisualsTab = self.Window:Tab({ Title = "Visuals", Icon = "eye" })
     local PlayerTab = self.Window:Tab({ Title = "Player", Icon = "user" })
@@ -305,7 +294,7 @@ function UI:Init()
     local CommunityTab = self.Window:Tab({ Title = "Community", Icon = "users" })
     
     -- ============================================
-    -- COMBAT TAB (Auto Parry, Aimbot, Hitbox, Auto Attack)
+    -- COMBAT TAB
     -- ============================================
     local parrySection = CombatTab:Section({ Title = "Auto Parry" })
     parrySection:Toggle({ Title = "Auto Parry", Value = config.Current.AutoParry, Callback = function(v) config.Set("AutoParry", v) end })
@@ -333,7 +322,7 @@ function UI:Init()
     miscCombatSection:Toggle({ Title = "Double Damage Generator", Value = config.Current.DoubleDamageGen, Callback = function(v) config.Set("DoubleDamageGen", v) end })
     
     -- ============================================
-    -- VISUALS TAB (ESP)
+    -- VISUALS TAB
     -- ============================================
     local playerEspSection = VisualsTab:Section({ Title = "Player ESP" })
     playerEspSection:Toggle({ Title = "ESP Survivor (Name)", Value = config.Current.ESP_Survivor_Name, Callback = function(v) config.Set("ESP_Survivor_Name", v); esp.RefreshESP() end })
@@ -357,7 +346,7 @@ function UI:Init()
     cameraSection:Toggle({ Title = "Show FOV Circle", Value = config.Current.ShowFOVCircle, Callback = function(v) config.Set("ShowFOVCircle", v) end })
     
     -- ============================================
-    -- PLAYER TAB (Movement & Utilities)
+    -- PLAYER TAB
     -- ============================================
     local movementSection = PlayerTab:Section({ Title = "Movement" })
     movementSection:Toggle({ Title = "Speed Boost", Value = config.Current.SpeedBoost, Callback = function(v) config.Set("SpeedBoost", v); local char = LocalPlayer.Character; local hum = char and char:FindFirstChild("Humanoid"); if hum then player.ApplySpeedBoost(hum) end end })
@@ -374,7 +363,7 @@ function UI:Init()
     utilitySection:Button({ Title = "Force Reset State (Anti-Stuck)", Icon = "lucide:refresh-cw", Callback = function() misc.TriggerAntiStuck() end })
     
     -- ============================================
-    -- MISC TAB (Generator, Auto Farm, Protection, Allow Jump)
+    -- MISC TAB
     -- ============================================
     local genSection = MiscTab:Section({ Title = "Generator" })
     genSection:Toggle({ Title = "Auto Generator", Value = config.Current.AutoGenerator, Callback = function(v) config.Set("AutoGenerator", v) end })
@@ -391,12 +380,11 @@ function UI:Init()
     protectionSection:Toggle({ Title = "Anti Aura", Value = getgenv().AntiAura or false, Callback = function(v) getgenv().AntiAura = v end })
     protectionSection:Divider()
     
-    -- Allow Jump Section
     local jumpSection = MiscTab:Section({ Title = "Jump" })
     local jumpEnabled = false
     jumpSection:Toggle({ 
         Title = "Allow Jump", 
-        Desc = "Allow Jump If game Has Anti Jump",
+        Desc = "Allow Jump if game has Anti Jump",
         Value = false, 
         Callback = function(v)
             jumpEnabled = v
@@ -453,9 +441,7 @@ function UI:Init()
         end
     })
     
-    -- ============================================
     -- OPEN WINDOW
-    -- ============================================
     self.Window:Open()
     task.wait(0.5)
     self.Window:Notify("PINATHUB", "Loaded! Press K to toggle GUI | R = Moonwalk | L = Anti-Stuck", 5)
