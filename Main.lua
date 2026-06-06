@@ -12,11 +12,41 @@ local passedModules = ...
 -- Simpan ke global environment (getgenv) agar aman dari overwrite library lain
 getgenv().PINATHUB_MODULES = getgenv().PINATHUB_MODULES or passedModules
 
+local function SafeHttpGet(url)
+    local ok, res = pcall(function()
+        if game.HttpGet then return game:HttpGet(url) end
+        if syn and syn.request then return syn.request({ Url = url, Method = "GET" }).Body end
+        if http_request then return http_request({ Url = url, Method = "GET" }).Body end
+        error("HttpGet unsupported")
+    end)
+    return ok and res or nil
+end
+
 -- Fungsi untuk ambil modules (dengan fallback ke global)
 local function GetModules()
     local modules = getgenv().PINATHUB_MODULES
     if not modules then
-        error("[PINATHUB] Modules lost! Restart script.")
+        warn("[PINATHUB] Modules missing from environment, attempting fallback...")
+        local baseUrl = "https://raw.githubusercontent.com/stokompetgacor23-dotcom/pnthb-vd/main/Modules/"
+        local moduleNames = {"Combat", "Config", "ESP", "Misc", "Player", "UI", "Utils"}
+        modules = {}
+
+        for _, name in ipairs(moduleNames) do
+            local content = SafeHttpGet(baseUrl .. name .. ".lua")
+            if content then
+                local func, err = loadstring(content)
+                if func then
+                    modules[name] = func()
+                else
+                    warn("[PINATHUB] Failed to load " .. name .. ": " .. tostring(err))
+                end
+            end
+        end
+
+        if not modules.Utils then
+            error("[PINATHUB] Modules lost! Restart script.")
+        end
+        getgenv().PINATHUB_MODULES = modules
     end
     return modules
 end
@@ -91,16 +121,6 @@ end
 
 local TargetGui = GetUIParent()
 
-local function SafeHttpGet(url)
-    local ok, res = pcall(function()
-        if game.HttpGet then return game:HttpGet(url) end
-        if syn and syn.request then return syn.request({ Url = url, Method = "GET" }).Body end
-        if http_request then return http_request({ Url = url, Method = "GET" }).Body end
-        error("HttpGet unsupported")
-    end)
-    return ok and res or nil
-end
-
 local WindUI
 do
     local src = SafeHttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua")
@@ -143,6 +163,7 @@ Modules.Combat.Player = Modules.Player
 Modules.Misc.Utils = Modules.Utils
 Modules.Misc.Config = Modules.Config
 Modules.Misc.ESP = Modules.ESP
+Modules.Misc.Combat = Modules.Combat
 Modules.Misc.WindUI = WindUI
 Modules.Misc.VirtualInputManager = VirtualInputManagerRef
 Modules.Misc.UserInputService = UserInputServiceRef

@@ -700,8 +700,8 @@ function Misc.SetupNamecallHook()
                         local firing = Misc.UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
                                     or (Misc.UserInputService.TouchEnabled and getgenv().isMobileFiring)
                         if firing then
-                            local combat = require(script.Parent.Combat)
-                            local target = combat.GetClosestSilentTarget()
+                            local combat = Misc.Combat
+                            local target = combat and combat.GetClosestSilentTarget()
                             if target and target.Parent then
                                 local vel = target.AssemblyLinearVelocity or Vector3.zero
                                 if vel.Magnitude > 45 then vel = vel.Unit * 45 end
